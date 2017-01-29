@@ -1,2 +1,0 @@
-# ABAP-SAP
-Códigos ABAP-SAP
