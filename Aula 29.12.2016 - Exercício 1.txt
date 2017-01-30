@@ -1,0 +1,141 @@
+﻿REPORT zydownloadpedido_al06.
+
+TABLES: ekko.
+
+TYPES: BEGIN OF st_ekko,
+         ebeln TYPE ekko-ebeln, "Chave
+         bukrs TYPE ekko-bukrs,
+         bsart TYPE ekko-bsart,
+         lifnr TYPE ekko-lifnr,
+         waers TYPE ekko-waers,
+         bedat TYPE ekko-bedat,
+       END OF st_ekko.
+
+TYPES: BEGIN OF st_ekpo,
+         ebeln TYPE ekpo-ebeln, "Chave
+         ebelp TYPE ekpo-ebelp,
+         txz01 TYPE ekpo-txz01,
+         matnr TYPE ekpo-matnr,
+         werks TYPE ekpo-werks,
+         lgort TYPE ekpo-lgort,
+         menge TYPE ekpo-menge,
+         meins TYPE ekpo-meins,
+         netpr TYPE ekpo-netpr,
+         netwr TYPE ekpo-netwr,
+       END OF st_ekpo.
+
+TYPES: BEGIN OF st_saida,
+         ebeln TYPE ekko-ebeln,
+         ebelp TYPE ekpo-ebelp,
+         bukrs TYPE ekko-bukrs,
+         bsart TYPE ekko-bsart,
+         lifnr TYPE ekko-lifnr,
+         waers TYPE ekko-waers,
+         bedat TYPE ekko-bedat,
+         txz01 TYPE ekpo-txz01,
+         matnr TYPE ekpo-matnr,
+         werks TYPE ekpo-werks,
+         lgort TYPE ekpo-lgort,
+         menge TYPE ekpo-menge,
+         meins TYPE ekpo-meins,
+         netpr TYPE ekpo-netpr,
+         netwr TYPE ekpo-netwr,
+       END OF st_saida.
+
+DATA: it_ekko  TYPE TABLE OF st_ekko,
+      it_ekpo  TYPE TABLE OF st_ekpo,
+      it_saida TYPE TABLE OF st_saida.
+
+DATA: wa_ekko  TYPE st_ekko,
+      wa_ekpo  TYPE st_ekpo,
+      wa_saida TYPE st_saida.
+
+DATA: nm_frame1 TYPE c LENGTH 50,
+      nm_frame2 TYPE c LENGTH 50.
+
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE nmframe1.
+SELECT-OPTIONS s_ebeln FOR ekko-ebeln.
+SELECTION-SCREEN END OF BLOCK b1.
+
+SELECTION-SCREEN BEGIN OF BLOCK b2 WITH FRAME TITLE nmframe2.
+PARAMETERS: p_tela RADIOBUTTON GROUP g1,
+            p_txt  RADIOBUTTON GROUP g1 DEFAULT 'X'.
+SELECTION-SCREEN END OF BLOCK b2.
+
+INITIALIZATION.
+  nmframe1 = 'Insira os dados para o filtro:'.
+  nmframe2 = 'Selecione o modo de visualização:'.
+
+START-OF-SELECTION.
+
+  IF p_tela EQ 'X'.
+    WRITE: 'Ainda será desenvolvido futuramente'.
+  ELSEIF p_txt EQ 'X'.
+
+* Carga nas tabelas
+    SELECT ebeln bukrs bsart
+           lifnr waers bedat
+    FROM ekko
+    INTO TABLE it_ekko
+    WHERE ebeln IN s_ebeln.
+
+    IF sy-subrc EQ 0.
+      SELECT ebeln ebelp txz01 matnr
+             werks lgort menge meins
+             netpr netwr
+      FROM ekpo
+      INTO TABLE it_ekpo
+      FOR ALL ENTRIES IN it_ekko
+      WHERE ebeln = it_ekko-ebeln.
+    ELSE.
+      WRITE 'Registro não encontra'.
+      EXIT.
+    ENDIF.
+
+* Tabela de Saída
+    LOOP AT it_ekpo INTO wa_ekpo.
+
+      wa_saida-ebeln = wa_ekpo-ebeln.
+      wa_saida-ebelp = wa_ekpo-ebelp.
+      wa_saida-txz01 = wa_ekpo-txz01.
+      wa_saida-matnr = wa_ekpo-matnr.
+      wa_saida-werks = wa_ekpo-werks.
+      wa_saida-lgort = wa_ekpo-lgort.
+      wa_saida-menge = wa_ekpo-menge.
+      wa_saida-meins = wa_ekpo-meins.
+      wa_saida-netpr = wa_ekpo-netpr.
+      wa_saida-netwr = wa_ekpo-netwr.
+
+      READ TABLE it_ekko WITH KEY ebeln = wa_ekpo-ebeln
+                         INTO wa_ekko.
+
+      wa_saida-bukrs = wa_ekko-bukrs.
+      wa_saida-bsart = wa_ekko-bsart.
+      wa_saida-lifnr = wa_ekko-lifnr.
+      wa_saida-waers = wa_ekko-waers.
+      wa_saida-bedat = wa_ekko-bedat.
+
+      APPEND wa_saida TO it_saida.
+
+      CLEAR wa_saida.
+
+    ENDLOOP.
+
+* Exportação da Tabela
+    CALL FUNCTION 'GUI_DOWNLOAD'
+      EXPORTING
+        filename = 'C:/Dados.txt'
+        filetype = 'ASC'
+      TABLES
+        data_tab = it_saida.
+
+    IF sy-subrc NE 0.
+      WRITE: 'O arquivo não pode ser exportado'.
+    ENDIF.
+
+
+  ENDIF.
+
+
+END-OF-SELECTION.
+

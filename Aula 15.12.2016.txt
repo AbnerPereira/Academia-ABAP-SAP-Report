@@ -1,0 +1,51 @@
+*&---------------------------------------------------------------------*
+*& Report ZYCALCULADORA
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zycalculadora MESSAGE-ID zcm_calculadora.
+* Programa com classe de mensagem "ZCM_CALCULADORA".
+
+* Declaração do tipo de variável local.
+TYPES ty_operando TYPE p DECIMALS 2.
+
+* Declaração de uma variável do tipo local criado.
+DATA vl_total TYPE ty_operando.
+
+* Um tipo de variável para saída de exibição de tela.
+PARAMETERS: p_oper1 TYPE ty_operando OBLIGATORY, "campo na tela pro usuário por um número
+            p_opera TYPE c LENGTH 1 OBLIGATORY , "campo na tela pra ser o operador
+            p_oper2 TYPE ty_operando OBLIGATORY. "campo na tela pro usuário por número
+
+* Validação
+* Executa um evento após a ação do usuário na tela de exibição.
+AT SELECTION-SCREEN.
+*
+  IF p_oper2 = 0 AND p_opera = '/'.
+    MESSAGE e000. "Criada na classe de mensagem.
+*   MESSAGE e000(zycm_instruto) - Segundo método para exibição da mensagem sem chamar a Classe de Mensagem no topo.
+  ENDIF.
+
+* Início do bloco de código para execução.
+START-OF-SELECTION.
+  CASE  p_opera.
+    WHEN '+'.
+      vl_total = p_oper1 + p_oper2.
+    WHEN '-'.
+      vl_total = p_oper1 - p_oper2.
+    WHEN '*'.
+      vl_total = p_oper1 * p_oper2.
+    WHEN '/'.
+      vl_total = p_oper1 / p_oper2.
+    WHEN OTHERS.
+      WRITE: 'Operador invalido'.
+  ENDCASE.
+
+* Também funciona.
+* WRITE: 'O resultado é:', vl_total.
+
+END-OF-SELECTION.
+
+* Saída após a ação executada pelo usuário.
+  WRITE: 'O resultado é:', vl_total.
+  WRITE                    vl_total

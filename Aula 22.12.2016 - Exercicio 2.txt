@@ -1,0 +1,65 @@
+* -- Programa Include -- *
+
+* Declarando uma estrutura.
+TABLES: zylivro_al06.
+
+* Estrutura(Struct) de Saída
+TYPES: BEGIN OF st_saida,
+         codliv    TYPE zylivro_al06-codliv,
+         descliv   TYPE zylivro_al06-descliv,
+         valliv    TYPE zylivro_al06-valliv,
+         moeda     TYPE zylivro_al06-moeda,
+         nomeautor TYPE zyautor_al06-nomeautor,
+         sexo      TYPE zyautor_al06-sexo,
+         descgen   TYPE zygenero_al06-descgen,
+       END OF st_saida.
+
+* Workarea para loop
+DATA: wa_saida TYPE st_saida.
+
+* Tabela interna
+DATA: it_saida TYPE STANDARD TABLE OF st_saida. "Padrão - A Palavra "STANDARD" é opcional.
+
+
+
+
+* -- Programa Principal -- *
+
+
+REPORT zyexibelivros_al06.
+
+* Para víncular ao programa include.
+INCLUDE zyvarlivros_al06.
+
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-001.
+SELECT-OPTIONS: so_liv FOR zylivro_al06-codliv. "Para pegar o intervalo de valores.
+SELECTION-SCREEN END OF BLOCK b1.
+
+START-OF-SELECTION.
+* Carregando com SQL.
+  SELECT a~codliv a~descliv a~valliv a~moeda
+    b~nomeautor b~sexo
+    c~descgen
+    INTO TABLE it_saida
+    FROM zylivro_al06 AS a
+    INNER JOIN zyautor_al06 AS b
+    ON a~codautor = b~codautor
+    INNER JOIN zygenero_al06 AS c
+    ON a~codgen = c~codgen
+    WHERE a~codliv IN so_liv. "IN - Em SQL é para lista/intervalo de valores
+
+  IF sy-subrc = 0.
+    "Loop de saída.
+    LOOP AT it_saida INTO wa_saida.
+      WRITE: / wa_saida-codliv,
+               wa_saida-descliv,
+               wa_saida-valliv,
+               wa_saida-moeda,
+               wa_saida-nomeautor,
+               wa_saida-sexo,
+               wa_saida-descgen.
+      CLEAR wa_saida.
+    ENDLOOP.
+  ELSE.
+    WRITE: 'Erro'.
+  ENDIF.

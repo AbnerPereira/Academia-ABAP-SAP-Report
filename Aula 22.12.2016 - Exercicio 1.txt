@@ -1,0 +1,47 @@
+REPORT zycarga_autor_al06.
+
+DATA wa_autor TYPE zyautor_al06.
+
+DATA v_cont TYPE i.
+
+* Primeiro bloco
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-001.
+PARAMETERS: pa_nome TYPE zyautor_al06-nomeautor.
+SELECTION-SCREEN END OF BLOCK b1.
+
+* Segundo bloco
+SELECTION-SCREEN BEGIN OF BLOCK b2 WITH FRAME TITLE TEXT-002.
+PARAMETERS: pa_sf TYPE zyautor_al06-sexo RADIOBUTTON GROUP g1,
+            pa_sm TYPE zyautor_al06-sexo RADIOBUTTON GROUP g1 DEFAULT 'X'.
+SELECTION-SCREEN END OF BLOCK b2.
+
+START-OF-SELECTION.
+
+* SEGUI A FORMATAÇÃO ABAIXA SENÃO NÃO EXECUTA.
+* Pegando o último registro.
+  SELECT MAX( codautor )
+  FROM zyautor_al06
+  INTO v_cont.
+
+  WRITE: v_cont.
+
+* Passando os valores para a Workarea.
+  wa_autor-codautor = v_cont + 1.
+  wa_autor-nomeautor = pa_nome.
+
+  IF pa_sf = 'X'.
+    wa_autor-sexo = 'F'.
+  ELSEIF pa_sm = 'X'.
+    wa_autor-sexo = 'M'.
+  ENDIF.
+
+* Inserindo na tabela transparente (não é tabela interna)
+  INSERT INTO zyautor_al06 VALUES wa_autor.
+
+* Mensagem
+  IF sy-subrc = 0.
+    WRITE: 'Registro Inserido'.
+  ELSE.
+    WRITE: 'Falha na Inserção'.
+  ENDIF.
+

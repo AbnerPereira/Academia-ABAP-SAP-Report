@@ -1,0 +1,98 @@
+REPORT zylivros_inst.
+
+DATA vl_codaut TYPE zyautor_inst-codautor.
+
+* Workarea(Struct) - tipo de estrutura como uma tabela possuindo apenas 1 registro.
+DATA wa_autor TYPE zyautor_inst.
+
+* Tabela Interna - Semelhante a uma tabela.
+DATA itab_autor TYPE STANDARD TABLE OF zyautor_inst.
+
+PARAMETERS: p_teste TYPE c LENGTH 10.
+
+START-OF-SELECTION.
+  wa_autor-codautor = 1.
+  wa_autor-nomeautor = 'José'.
+  wa_autor-sexo = 'M'.
+
+* Enviando para a tabela interna
+* Inseri abaixo do último registro
+  APPEND wa_autor TO itab_autor.
+
+* Limpar a Workarea
+  CLEAR wa_autor.
+
+  wa_autor-codautor = 2.
+  wa_autor-nomeautor = 'Maria'.
+  wa_autor-sexo = 'F'.
+
+* Inserindo o resgistro determinando qual a posição ele deve ficar na tabela interna
+* INSERT wa_autor INTO itab_autor INDEX 1.
+
+  APPEND wa_autor TO itab_autor.
+
+  CLEAR wa_autor.
+
+  wa_autor-codautor = 3.
+  wa_autor-nomeautor = 'Pedro'.
+  wa_autor-sexo = 'M'.
+
+  APPEND wa_autor TO itab_autor.
+
+* Loop com tabela interna passando os valores para a Workarea
+  LOOP AT itab_autor INTO wa_autor. "WHERE sexo = 'M'. -> Para colocar uma restrição
+
+    "sy-tabix - Uma variável de sistema que funciona como um contador na tabela interna
+    IF sy-tabix = 1.
+      WRITE: '  INDICE   ','|', 'NOME'.
+      ULINE. "Cria uma linha continua dentro de uma nova linha pegando de um ponta a outra
+    ENDIF.
+
+    WRITE: sy-tabix,'|', wa_autor-nomeautor.
+    ULINE.
+
+*   CONTINUE. "Pula as linhas deste ponto a baixo dentro do loop.
+*   EXIT. "Sai do loop.
+
+*   Comando MODIFY
+*   wa_autor-nomeautor = 'Renan'.
+*   MODIFY itab_autor FROM wa_autor INDEX sy-tabix.
+*   WRITE / wa_autor-nomeautor.
+  ENDLOOP.
+  ULINE.
+
+* Comando DO com Parada Indeterminada
+  DO.
+    "sy-index - Pega uma linha dentro da tabela interna
+    WRITE sy-index.
+    IF sy-index = 2.
+      EXIT.
+    ENDIF.
+  ENDDO.
+  ULINE.
+
+* Comando WHILE
+  WHILE sy-index <> 4.
+    WRITE sy-index.
+  ENDWHILE.
+  ULINE.
+
+* Comando DO com Parada Determinada
+  DO 4 TIMES.
+
+    "Passando um registro da tabela interna para a Workarea
+    "READ TABLE itab_autor WITH KEY nomeautor = 'José'
+    READ TABLE itab_autor INDEX sy-index
+            INTO wa_autor.
+
+    "sy-subrc - Para verificar se a última ação foi executada com sucesso
+    IF sy-subrc = 0.
+      WRITE wa_autor-nomeautor.
+    ELSE.
+      WRITE: 'Não existe a linha de numero ', sy-index.
+    ENDIF.
+  ENDDO.
+
+* Deletar um registro especifico na tabela interna.
+* DELETE itab_autor WHERE sexo = 'M'.
+

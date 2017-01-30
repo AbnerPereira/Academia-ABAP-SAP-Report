@@ -1,0 +1,68 @@
+REPORT zycalc2_al06 MESSAGE-ID zycm_instrutor.
+
+TYPES ty_operando TYPE p LENGTH 5 DECIMALS 2.
+DATA vl_total TYPE ty_operando.
+
+* Tela de exibição.
+* Separação em blocos na visualização.
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE operando. "operando É UMA VARIÁVEL.
+PARAMETERS: p_oper1 TYPE ty_operando OBLIGATORY,
+            p_oper2 TYPE ty_operando OBLIGATORY.
+SELECTION-SCREEN END OF BLOCK b1.
+
+* Tela de exibição.
+* Segundo bloco com "Radiobutton".
+SELECTION-SCREEN BEGIN OF BLOCK b2 WITH FRAME TITLE operador. "operado É UMA VARIÁVEL.
+PARAMETERS: p_adic RADIOBUTTON GROUP gr1,
+            p_subt RADIOBUTTON GROUP gr1,
+            p_mult RADIOBUTTON GROUP gr1 DEFAULT 'X', "Definido como padrão.
+            p_divi RADIOBUTTON GROUP gr1.
+SELECTION-SCREEN END OF BLOCK b2.
+
+* Criando uma combobox e pegando os valores de uma tabela.
+SELECTION-SCREEN BEGIN OF BLOCK b3.
+PARAMETERS: p_sexo TYPE zyautor_al06-sexo AS LISTBOX VISIBLE LENGTH 20.
+* É possivel fazer usando uma ajuda de pesquisa de uma tabela.
+* Abaixo se houver uma ajuda de pesquisa para este campo na tabela o comando funcionará.
+*            p_sexo TYPE zyautor_al06-sexo.
+* Também funcionará se houver valores fixo de domínio no campo da tabela.
+
+SELECTION-SCREEN END OF BLOCK b3.
+
+* Inicialização dos blocos. Executa rotinas que serão executadas apenas uma vez.
+INITIALIZATION.
+*  operando = 'Defina os operandos'.
+*  operador = 'Defina o operador'.
+* Com símbolos de texto. È melhor para efetuar a tradução do programa.
+  operando = TEXT-001.
+  operador = TEXT-002.
+
+* Tratamento
+AT SELECTION-SCREEN.
+* Só é possivel inserir mensagem de erro somente aqui(eXXX).
+* Só é possivel inserir mensagem de aviso somente aqui(wXXX).
+* Para mudar o comportamento: MESSAGE e000 DISPLAY LIKE 'I'. (Comportamento de Informação)
+* Colocar RETURN logo abaixo para não parar o programa no caso de um "s" com comportamento do "e".
+  IF p_oper2 = 0 AND p_divi = 'X'. "Parameter selecionado como divisão.
+    MESSAGE e000. "O "e" significa MENSAGEM DO TIPO ERRO. Existe vários tipos de mensagem.
+  ENDIF.
+
+* Bloco de execução.
+START-OF-SELECTION.
+  CASE 'X'. "Comparando o valor com os radiobutton.
+    WHEN p_adic.
+      vl_total = p_oper1 + p_oper2.
+    WHEN p_subt.
+      vl_total = p_oper1 - p_oper2.
+    WHEN p_mult.
+      vl_total = p_oper1 * p_oper2.
+    WHEN p_divi.
+      vl_total = p_oper1 / p_oper2.
+  ENDCASE.
+
+END-OF-SELECTION.
+
+* Mensagem com concatenação da variável.
+* "O resultado final é &." (NA Classe de Mensagem - Ecomercial é substituído pela variável).
+* Pode usa também &1, &2, &3 e &4 (O máximo é 4).
+  MESSAGE s001 WITH vl_total.

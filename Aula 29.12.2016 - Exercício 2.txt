@@ -1,0 +1,272 @@
+﻿*&---------------------------------------------------------------------*
+*&  Include           ZYVARDOWNLOADPEDIDO_AL06
+*&---------------------------------------------------------------------*
+TABLES: ekko.
+
+TYPES: BEGIN OF st_ekko,
+         ebeln TYPE ekko-ebeln, "Chave
+         bukrs TYPE ekko-bukrs,
+         bsart TYPE ekko-bsart,
+         lifnr TYPE ekko-lifnr,
+         waers TYPE ekko-waers,
+         bedat TYPE ekko-bedat,
+       END OF st_ekko.
+
+TYPES: BEGIN OF st_ekpo,
+         ebeln TYPE ekpo-ebeln, "Chave
+         ebelp TYPE ekpo-ebelp,
+         txz01 TYPE ekpo-txz01,
+         matnr TYPE ekpo-matnr,
+         werks TYPE ekpo-werks,
+         lgort TYPE ekpo-lgort,
+         menge TYPE ekpo-menge,
+         meins TYPE ekpo-meins,
+         netpr TYPE ekpo-netpr,
+         netwr TYPE ekpo-netwr,
+       END OF st_ekpo.
+
+TYPES: BEGIN OF st_saida,
+         ebeln TYPE ekko-ebeln,
+         ebelp TYPE ekpo-ebelp,
+         bukrs TYPE ekko-bukrs,
+         bsart TYPE ekko-bsart,
+         lifnr TYPE ekko-lifnr,
+         waers TYPE ekko-waers,
+         bedat TYPE ekko-bedat,
+         txz01 TYPE ekpo-txz01,
+         matnr TYPE ekpo-matnr,
+         werks TYPE ekpo-werks,
+         lgort TYPE ekpo-lgort,
+         menge TYPE ekpo-menge,
+         meins TYPE ekpo-meins,
+         netpr TYPE ekpo-netpr,
+         netwr TYPE ekpo-netwr,
+       END OF st_saida.
+
+DATA: it_ekko  TYPE TABLE OF st_ekko,
+      it_ekpo  TYPE TABLE OF st_ekpo,
+      it_saida TYPE TABLE OF st_saida.
+
+DATA: wa_ekko  TYPE st_ekko,
+      wa_ekpo  TYPE st_ekpo,
+      wa_saida TYPE st_saida.
+
+DATA: nm_frame1 TYPE c LENGTH 50,
+      nm_frame2 TYPE c LENGTH 50.
+
+DATA cm_arquivo TYPE string VALUE 'C:\Users\y3hi\Desktop\Dados.txt'.
+
+DATA: vl_campo TYPE c LENGTH 30,
+      vl_valor TYPE c LENGTH 30.
+
+CONSTANTS cc_campo TYPE c LENGTH 30 VALUE 'WA_EKKO-EBELN'.
+
+
+
+
+*&---------------------------------------------------------------------*
+*&  Programa Principal
+*&---------------------------------------------------------------------*
+REPORT zydownloadpedido_al06 NO STANDARD PAGE HEADING.
+
+INCLUDE zyvardownloadpedido_al06.
+
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE text-001.
+SELECT-OPTIONS s_ebeln FOR ekko-ebeln NO-EXTENSION.
+SELECTION-SCREEN END OF BLOCK b1.
+
+SELECTION-SCREEN BEGIN OF BLOCK b2 WITH FRAME TITLE text-002.
+PARAMETERS: p_tela RADIOBUTTON GROUP g1,
+            p_txt  RADIOBUTTON GROUP g1 DEFAULT 'X'.
+SELECTION-SCREEN END OF BLOCK b2.
+
+SELECTION-SCREEN BEGIN OF BLOCK b3 WITH FRAME TITLE text-003.
+PARAMETERS p_cm TYPE string.
+SELECTION-SCREEN END OF BLOCK b3.
+
+
+TOP-OF-PAGE.
+  WRITE: / 'EBELN',
+           'BUKRS',
+           'BSART',
+           'LIFNR',
+           'WAERS',
+           'BEDAT'.
+  ULINE.
+
+
+TOP-OF-PAGE DURING LINE-SELECTION.
+  WRITE: / 'EBELN',
+           'EBELP',
+           'TXZ01',
+           'MATNR',
+           'WERKS',
+           'LGORT',
+           'MENGE',
+           'MEINS',
+           'NETPR',
+           'NETWR'.
+  ULINE.
+
+AT LINE-SELECTION.
+  GET CURSOR FIELD vl_campo VALUE vl_valor. "vl_campo - pega o nome do campo | vl_valor - pega o valor do campo
+*  WRITE: 'oi'.
+
+  IF vl_campo = cc_campo.
+
+    READ TABLE it_ekpo INTO wa_ekpo WITH KEY ebeln = vl_valor.
+
+    WRITE: / wa_ekpo-ebeln,
+             wa_ekpo-ebelp,
+             wa_ekpo-txz01,
+             wa_ekpo-matnr,
+             wa_ekpo-werks,
+             wa_ekpo-lgort,
+             wa_ekpo-menge,
+             wa_ekpo-meins,
+             wa_ekpo-netpr,
+             wa_ekpo-netwr.
+
+  ENDIF.
+
+
+  INITIALIZATION.
+  p_cm = cm_arquivo.
+
+START-OF-SELECTION.
+
+  IF p_tela EQ 'X'.
+    "WRITE text-004.
+
+    PERFORM telaprincipal.
+
+  ELSEIF p_txt EQ 'X'.
+
+* Carga nas tabelas
+    PERFORM cargatabelas.
+
+* Tabela de Saída
+    PERFORM cargasaida.
+
+* Exportação da Tabela
+    PERFORM exportacao.
+  ENDIF.
+
+
+END-OF-SELECTION.
+*&---------------------------------------------------------------------*
+*&      Form  CARGATABELAS
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM cargatabelas .
+  SELECT ebeln bukrs bsart
+         lifnr waers bedat
+  FROM ekko
+  INTO TABLE it_ekko
+  WHERE ebeln IN s_ebeln.
+
+  IF sy-subrc EQ 0.
+    SELECT ebeln ebelp txz01 matnr
+           werks lgort menge meins
+           netpr netwr
+    FROM ekpo
+    INTO TABLE it_ekpo
+    FOR ALL ENTRIES IN it_ekko
+    WHERE ebeln = it_ekko-ebeln.
+  ELSE.
+    WRITE text-005.
+    EXIT.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  CARGASAIDA
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM cargasaida .
+  LOOP AT it_ekpo INTO wa_ekpo.
+
+    wa_saida-ebeln = wa_ekpo-ebeln.
+    wa_saida-ebelp = wa_ekpo-ebelp.
+    wa_saida-txz01 = wa_ekpo-txz01.
+    wa_saida-matnr = wa_ekpo-matnr.
+    wa_saida-werks = wa_ekpo-werks.
+    wa_saida-lgort = wa_ekpo-lgort.
+    wa_saida-menge = wa_ekpo-menge.
+    wa_saida-meins = wa_ekpo-meins.
+    wa_saida-netpr = wa_ekpo-netpr.
+    wa_saida-netwr = wa_ekpo-netwr.
+
+    READ TABLE it_ekko WITH KEY ebeln = wa_ekpo-ebeln
+                       INTO wa_ekko.
+
+    wa_saida-bukrs = wa_ekko-bukrs.
+    wa_saida-bsart = wa_ekko-bsart.
+    wa_saida-lifnr = wa_ekko-lifnr.
+    wa_saida-waers = wa_ekko-waers.
+    wa_saida-bedat = wa_ekko-bedat.
+
+    APPEND wa_saida TO it_saida.
+
+    CLEAR wa_saida.
+
+  ENDLOOP.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  EXPORTACAO
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM exportacao .
+
+  "Caminho de saída do arquivo.
+  cm_arquivo = p_cm.
+
+  CALL FUNCTION 'GUI_DOWNLOAD'
+    EXPORTING
+      filename = cm_arquivo
+      filetype = 'ASC'
+    TABLES
+      data_tab = it_saida.
+
+  IF sy-subrc NE 0.
+    WRITE text-006.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  TELAPRINCIPAL
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM telaprincipal .
+
+  PERFORM cargatabelas.
+
+  CLEAR wa_ekko.
+
+  LOOP AT it_ekko INTO wa_ekko.
+    WRITE: / '|', wa_ekko-ebeln,
+             '|', wa_ekko-bukrs,
+             '|', wa_ekko-bsart,
+             '|',wa_ekko-lifnr,
+             '|',wa_ekko-waers,
+             '|',wa_ekko-bedat.
+    ULINE.
+  ENDLOOP.
+
+ENDFORM.

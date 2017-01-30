@@ -1,0 +1,26 @@
+REPORT zyvoos_al06 MESSAGE-ID zycm_instrutor.
+
+* Declarando uma estrutura.
+TABLES: sflight.
+
+DATA itab_voos TYPE STANDARD TABLE OF sflight. "Tabela interna do tipo da estrutura declarada
+DATA wa_voo TYPE sflight. "Workarea
+
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-001.
+SELECT-OPTIONS s_carrid FOR sflight-carrid.
+SELECT-OPTIONS s_fldate FOR sflight-fldate NO INTERVALS NO-EXTENSION.
+SELECTION-SCREEN END OF BLOCK b1.
+
+START-OF-SELECTION.
+
+  SELECT * FROM sflight INTO TABLE itab_voos
+           WHERE carrid IN s_carrid
+            AND  fldate IN s_fldate.
+
+END-OF-SELECTION.
+
+* Loop para passar valores da tabela interna para a Workarea
+  LOOP AT itab_voos INTO wa_voo.
+    ULINE. "Cria uma linha continua dentro de uma nova linha pegando de um ponta a outra
+    WRITE: wa_voo-carrid, wa_voo-connid, wa_voo-fldate, wa_voo-price.
+  ENDLOOP.

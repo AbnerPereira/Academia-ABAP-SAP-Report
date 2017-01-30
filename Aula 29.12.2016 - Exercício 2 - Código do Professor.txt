@@ -1,0 +1,346 @@
+﻿REPORT zydownloadpedido_inst MESSAGE-ID zycrm_instrutor
+                             LINE-SIZE 62.
+
+TABLES: ekko.
+
+TYPES: BEGIN OF st_ekko,
+         ebeln TYPE ekko-ebeln,
+         bukrs TYPE ekko-bukrs,
+         bsart TYPE ekko-bsart,
+         lifnr TYPE ekko-lifnr,
+         waers TYPE ekko-waers,
+         bedat TYPE ekko-bedat,
+       END OF st_ekko.
+
+TYPES: BEGIN OF st_ekpo,
+         ebeln TYPE ekpo-ebeln,
+         ebelp TYPE ekpo-ebelp,
+         txz01 TYPE ekpo-txz01,
+         matnr TYPE ekpo-matnr,
+         werks TYPE ekpo-werks,
+         lgort TYPE ekpo-lgort,
+         menge TYPE ekpo-menge,
+         meins TYPE ekpo-meins,
+         netpr TYPE ekpo-netpr,
+         netwr TYPE ekpo-netwr,
+       END OF st_ekpo.
+
+TYPES: BEGIN OF st_saida,
+         ebeln TYPE ekko-ebeln,
+         bukrs TYPE ekko-bukrs,
+         bsart TYPE ekko-bsart,
+         lifnr TYPE ekko-lifnr,
+         waers TYPE ekko-waers,
+         bedat TYPE ekko-bedat,
+         ebelp TYPE ekpo-ebelp,
+         txz01 TYPE ekpo-txz01,
+         matnr TYPE ekpo-matnr,
+         werks TYPE ekpo-werks,
+         lgort TYPE ekpo-lgort,
+         menge TYPE ekpo-menge,
+         meins TYPE ekpo-meins,
+         netpr TYPE ekpo-netpr,
+         netwr TYPE ekpo-netwr,
+       END OF st_saida.
+
+DATA: wa_ekko  TYPE st_ekko,
+      wa_ekpo  TYPE st_ekpo,
+      wa_saida TYPE st_saida.
+
+DATA: it_ekko  TYPE TABLE OF st_ekko,
+      it_ekpo  TYPE TABLE OF st_ekpo,
+      it_saida TYPE TABLE OF st_saida.
+
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE text-001.
+SELECT-OPTIONS: so_ebeln FOR ekko-ebeln.
+SELECTION-SCREEN END OF BLOCK b1.
+
+SELECTION-SCREEN BEGIN OF BLOCK b3 WITH FRAME TITLE text-003.
+PARAMETERS: pa_dir TYPE string.
+SELECTION-SCREEN END OF BLOCK b3.
+
+SELECTION-SCREEN BEGIN OF BLOCK b4 WITH FRAME TITLE text-004.
+PARAMETERS: pa_narq TYPE string.
+SELECTION-SCREEN END OF BLOCK b4.
+
+SELECTION-SCREEN BEGIN OF BLOCK b2 WITH FRAME TITLE text-002.
+PARAMETERS: p_rel TYPE c RADIOBUTTON GROUP c1,
+            p_arq TYPE c RADIOBUTTON GROUP c1 DEFAULT 'X'.
+SELECTION-SCREEN END OF BLOCK b2.
+
+INITIALIZATION.
+
+
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR pa_dir.
+
+  DATA: v_title  TYPE string,
+        v_folder TYPE string.
+
+  v_title = 'Selecione a Pasta Desejada para gravação do arquivo e Clique no Botão [OK]'.
+
+  "Método para criar uma caixa com diretórios para a seleção do usuário
+  CALL METHOD cl_gui_frontend_services=>directory_browse
+    EXPORTING
+      window_title         = v_title
+      initial_folder       = 'C:/'
+    CHANGING
+      selected_folder      = v_folder
+    EXCEPTIONS
+      cntl_error           = 1
+      error_no_gui         = 2
+      not_supported_by_gui = 3
+      OTHERS               = 4.
+
+  pa_dir = v_folder.
+
+
+TOP-OF-PAGE.
+  WRITE: '|', 'Nº Doc.   ',
+         '|', 'Emp.',
+         '|', 'Tp. ',
+         '|', 'Nº Conta  ',
+         '|', 'Moeda',
+         '|', 'Dt. Compra', '|'.
+  ULINE.
+
+TOP-OF-PAGE DURING LINE-SELECTION.
+
+  WRITE: sy-uline, '|', 'Item ',
+         '|', (30) 'Descrição',
+         '|', (15) 'Nº Material',
+         '|', 'Cent',
+         '|', 'Dep.',
+         '|', 'Quant.',
+         '|', 'Un',
+         '|', 'Preço Moeda Doc',
+         '|', 'Valor Moeda Ped', '|'.
+  ULINE.
+
+
+START-OF-SELECTION.
+
+  PERFORM seleciona_dados.
+  PERFORM monta_saida.
+
+  IF p_rel = 'X'.
+    PERFORM exibe_lista_principal.
+  ELSEIF p_arq = 'X'.
+    PERFORM gera_arquivo.
+  ENDIF.
+
+AT LINE-SELECTION.
+
+  IF sy-lsind = 1.
+    NEW-PAGE LINE-SIZE 160.         "Nova página com largura de 160
+    PERFORM seleciona_item_pedido.
+    IF it_ekpo IS NOT INITIAL.      "É igual ao sy-subrc
+      PERFORM exibe_lista_secundaria.
+    ENDIF.
+  ENDIF.
+
+*&---------------------------------------------------------------------*
+*&      Form  SELECIONA_DADOS
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM seleciona_dados .
+
+  SELECT ebeln
+         bukrs
+         bsart
+         lifnr
+         waers
+         bedat
+     FROM ekko
+         INTO TABLE  it_ekko
+         WHERE ebeln IN so_ebeln.
+
+  IF it_ekko IS NOT INITIAL.
+
+    SELECT ebeln
+           ebelp
+           txz01
+           matnr
+           werks
+           lgort
+           menge
+           meins
+           netpr
+           netwr
+       FROM ekpo
+      INTO TABLE it_ekpo
+      FOR ALL ENTRIES IN it_ekko
+      WHERE ebeln = it_ekko-ebeln.
+
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  MONTA_SAIDA
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM monta_saida .
+
+  LOOP AT it_ekko INTO wa_ekko.
+
+    wa_saida-ebeln = wa_ekko-ebeln.
+    wa_saida-bukrs = wa_ekko-bukrs.
+    wa_saida-bsart = wa_ekko-bsart.
+    wa_saida-lifnr = wa_ekko-lifnr.
+    wa_saida-waers = wa_ekko-waers.
+    wa_saida-bedat = wa_ekko-bedat.
+
+    READ TABLE it_ekpo INTO wa_ekpo
+                        WITH KEY ebeln = wa_ekko-ebeln.
+    IF sy-subrc = 0.
+
+      wa_saida-ebelp = wa_ekpo-ebelp.
+      wa_saida-txz01 = wa_ekpo-txz01.
+      wa_saida-matnr = wa_ekpo-matnr.
+      wa_saida-werks = wa_ekpo-werks.
+      wa_saida-lgort = wa_ekpo-lgort.
+      wa_saida-menge = wa_ekpo-menge.
+      wa_saida-meins = wa_ekpo-meins.
+      wa_saida-netpr = wa_ekpo-netpr.
+      wa_saida-netwr = wa_ekpo-netwr.
+
+    ENDIF.
+
+    APPEND wa_saida TO it_saida.
+    CLEAR wa_saida.
+
+  ENDLOOP.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  GERA_ARQUIVO
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM gera_arquivo.
+
+  TYPES: BEGIN OF st_fieldnames,
+           campo1 TYPE c LENGTH 10,
+           campo2 TYPE c LENGTH 10,
+           campo3 TYPE c LENGTH 10,
+           campo4 TYPE c LENGTH 10,
+           campo5 TYPE c LENGTH 10,
+         END OF st_fieldnames.
+
+  DATA: wa_fieldnames TYPE st_fieldnames,          "Linha para o nome das colunas da tabela
+        it_fieldnames TYPE TABLE OF st_fieldnames. "Tabela a ser passada com o nome das colunas recebida pela WA
+
+  wa_fieldnames-campo1 = 'TESTE1'.
+  wa_fieldnames-campo2 = 'TESTE2'.
+  wa_fieldnames-campo3 = 'TESTE3'.
+  wa_fieldnames-campo4 = 'TESTE4'.
+  wa_fieldnames-campo5 = 'TESTE5'.
+
+  APPEND wa_fieldnames TO it_fieldnames.
+
+  DATA: l_filename TYPE string.  "Recebe o caminho mais o nome do arquivo de gravação
+
+  CONCATENATE pa_dir '\' pa_narq INTO l_filename. "pa_dir -> Diretório + '\' + pa_narq-> Nome do Arquivo
+
+  CALL FUNCTION 'GUI_DOWNLOAD'
+    EXPORTING
+      filename              = l_filename
+      filetype              = 'ASC'
+      write_field_separator = 'X'
+    TABLES
+      data_tab              = it_saida
+      FIELDNAMES            = it_fieldnames.  "Nome das colunas
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  EXIBE_LISTA_PRINCIPAL
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM exibe_lista_principal .
+
+  LOOP AT it_ekko INTO wa_ekko.
+    WRITE: / '|', wa_ekko-ebeln HOTSPOT,    "HOTSPOT - Cria uma "Mão-de-link" no mouse
+             '|', wa_ekko-bukrs,
+             '|', wa_ekko-bsart,
+             '|', wa_ekko-lifnr,
+             '|', wa_ekko-waers,
+             '|', wa_ekko-bedat, '|'.
+    ULINE.
+  ENDLOOP.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  SELECIONA_ITEM_PEDIDO
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM seleciona_item_pedido .
+
+  DATA: l_field_name  TYPE c LENGTH 30,
+        l_field_value TYPE c LENGTH 50.
+
+  GET CURSOR FIELD l_field_name VALUE l_field_value.
+
+  IF l_field_name = 'WA_EKKO-EBELN' AND l_field_value IS NOT INITIAL.
+
+    SELECT ebeln
+           ebelp
+           txz01
+           matnr
+           werks
+           lgort
+           menge
+           meins
+           netpr
+           netwr
+       FROM ekpo
+      INTO TABLE it_ekpo
+      WHERE ebeln = l_field_value.
+
+  ELSE.
+    MESSAGE e004.
+  ENDIF.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  EXIBE_LISTA_SECUNDARIA
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM exibe_lista_secundaria .
+
+  LOOP AT it_ekpo INTO wa_ekpo.
+    WRITE: / '|', wa_ekpo-ebelp,
+             '|', wa_ekpo-txz01(30),
+             '|', wa_ekpo-matnr(15),
+             '|', wa_ekpo-werks,
+             '|', wa_ekpo-lgort,
+             '|', (6) wa_ekpo-menge,
+             '|', wa_ekpo-meins,
+             '|', wa_ekpo-netpr,
+             '|', wa_ekpo-netwr.
+    ULINE.
+  ENDLOOP.
+
+ENDFORM.

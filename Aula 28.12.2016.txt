@@ -1,0 +1,63 @@
+* Funções (SE37)
+
+
+* -- Tabela Espelhos -- *
+ZYTP_LIVRO_AL06
+ZYTP_autor_AL06
+ZYTP_genero_AL06
+
+
+* -- Função com Parâmetro de Importação e Exportação -- *
+
+FUNCTION ZYBUSCA_AUT_GEN_AL06.
+*"----------------------------------------------------------------------
+*"*"Interface local:
+*"  IMPORTING
+*"     REFERENCE(IT_LIVRO) TYPE  ZYTP_LIVRO_AL06
+*"  EXPORTING
+*"     REFERENCE(IT_AUTOR) TYPE  ZYTP_AUTOR_AL06
+*"     REFERENCE(IT_GENERO) TYPE  ZYTP_GENERO_AL06
+*"----------------------------------------------------------------------
+
+    SELECT * FROM zyautor_al06
+      INTO TABLE it_autor
+      FOR ALL ENTRIES IN it_livro
+      WHERE codautor = it_livro-codautor.
+
+    SELECT * FROM zygenero_al06
+      INTO TABLE it_genero
+      FOR ALL ENTRIES IN it_livro
+      WHERE codgen = it_livro-codgen.
+
+ENDFUNCTION.
+
+
+
+* -- Programa Principal -- *
+
+FORM executa_selecao .
+  SELECT * FROM zylivro_al06
+    INTO TABLE  it_livro
+    WHERE codliv IN so_liv.
+
+  IF it_livro IS NOT INITIAL.
+*    SELECT * FROM zyautor_al06
+*      INTO TABLE it_autor
+*      FOR ALL ENTRIES IN it_livro
+*      WHERE codautor = it_livro-codautor.
+*
+*    SELECT * FROM zygenero_al06
+*      INTO TABLE it_genero
+*      FOR ALL ENTRIES IN it_livro
+*      WHERE codgen = it_livro-codgen.
+
+    CALL FUNCTION 'ZYBUSCA_AUT_GEN_AL06'
+      EXPORTING
+        it_livro       = it_livro
+     IMPORTING
+       IT_AUTOR        = it_autor
+       IT_GENERO       = it_genero.
+              
+  ENDIF.
+ENDFORM.
+

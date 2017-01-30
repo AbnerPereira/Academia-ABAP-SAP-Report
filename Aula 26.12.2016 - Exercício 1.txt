@@ -1,0 +1,48 @@
+REPORT zyvoos_inst MESSAGE-ID zycm_instrutor LINE-SIZE 80     "Lagura
+                                             LINE-COUNT 20(2)."Altura(rodapé).
+
+TABLES: sflight.
+
+DATA itab_voos TYPE STANDARD TABLE OF sflight.
+DATA wa_voo  TYPE sflight.
+DATA : vl_campo TYPE c LENGTH 30,
+       vl_valor TYPE c LENGTH 50.
+CONSTANTS cc_campo_preco TYPE c LENGTH 12 VALUE 'WA_VOO-PRICE'.
+
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE text-001.
+SELECT-OPTIONS s_carrid FOR sflight-carrid.
+SELECT-OPTIONS s_fldate FOR sflight-fldate NO INTERVALS NO-EXTENSION.
+SELECTION-SCREEN END OF BLOCK b1.
+
+TOP-OF-PAGE.
+
+  WRITE 'Cabeçalho'.
+
+END-OF-PAGE. "Definindo um rodapé
+
+  WRITE 'Rodapé'.
+
+TOP-OF-PAGE DURING LINE-SELECTION.
+
+  WRITE 'Cabeçalho da seleção'.
+
+AT LINE-SELECTION.
+
+  GET CURSOR FIELD vl_campo VALUE vl_valor.
+  IF vl_campo = cc_campo_preco.
+    WRITE: 'O preço é ', vl_valor.
+  ENDIF.
+
+START-OF-SELECTION.
+
+  SELECT * FROM sflight INTO TABLE itab_voos
+           WHERE carrid IN s_carrid
+            AND  fldate IN s_fldate.
+
+END-OF-SELECTION.
+
+  LOOP AT itab_voos INTO wa_voo.
+    ULINE.
+    WRITE: wa_voo-carrid, wa_voo-connid, wa_voo-fldate, wa_voo-price.
+  ENDLOOP.
+
